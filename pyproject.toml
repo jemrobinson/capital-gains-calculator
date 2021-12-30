@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "capital-gains-calculator"
+version = "0.1.0"
+description = "UK capital gains calculator for Portfolio Performance"
+authors = ["James Robinson <james.em.robinson@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+py-moneyed = "^2.0"
+python-dateutil = "^2.8.2"
+pandas = "^1.3.5"
+
+[tool.poetry.dev-dependencies]
+black = "^21.12b0"
+flake8 = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
