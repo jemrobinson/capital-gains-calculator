@@ -130,7 +130,7 @@ class Security:
                 logging.debug(f"  {transaction}")
                 pool.add_purchase(transaction)
                 self.events.append((transaction, pool))
-            if isinstance(transaction, Purchase):
+            elif isinstance(transaction, Purchase):
                 logging.debug(f"=> Found a Purchase on {transaction.date}:")
                 logging.debug(f"  {transaction}")
                 pool.add_purchase(transaction)
@@ -149,7 +149,6 @@ class Security:
                 logging.debug(f"=> Found a Sale on {transaction.date}:")
                 logging.debug(f"  {transaction}")
                 logging.debug("... reconciling against pool to give:")
-                # pool = copy.deepcopy(self.events[-1][1])
                 purchase, sale, disposal = reconcile(pool, transaction)
                 logging.debug(f"  {purchase}")
                 logging.debug(f"  {sale}")
