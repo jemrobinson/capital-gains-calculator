@@ -1,6 +1,19 @@
+import logging
 from .purchase import Purchase
+from .pooled_purchase import PooledPurchase
 from .sale import Sale
 from .disposal import Disposal
+
+
+def exchange(purchases, sale):
+    pool = PooledPurchase(purchases[0].currency)
+    for purchase in purchases:
+        pool.add_purchase(purchase)
+    if pool.units != sale.units:
+        raise ValueError(
+            f"Unable to match pool with {pool.units} shares against exchange-sale with {sale.units}"
+        )
+    return reconcile(pool, sale)
 
 
 def reconcile(purchase, sale):
@@ -12,9 +25,10 @@ def reconcile(purchase, sale):
         raise ValueError(
             f"Currencies {sale.currency} and {purchase.currency} do not match!"
         )
-    total_units = purchase.units - sale.units
+    total_units = abs(purchase.units - sale.units)
     if purchase.units > sale.units:
         # In this case we are selling part of the purchase => the entire sale is consumed
+        logging.debug(f"Selling part of the purchase: {sale.units} of {purchase.units}")
         sale_ = Sale(sale.datetime, sale.currency)
         disposal = Disposal(
             sale.datetime,
@@ -46,6 +60,9 @@ def reconcile(purchase, sale):
         )
     elif purchase.units < sale.units:
         # In this case we are selling more than the entire purchase => the entire purchase is consumed
+        logging.debug(
+            f"Selling more than the entire purchase: {sale.units} of {purchase.units}"
+        )
         purchase_ = Purchase(purchase.datetime, purchase.currency)
         disposal = Disposal(
             sale.datetime,
@@ -77,6 +94,7 @@ def reconcile(purchase, sale):
         )
     elif purchase.units == sale.units:
         # In this case we are selling the entire purchase => the entire purchase and sale are consumed
+        logging.debug(f"Selling the entire purchase: {sale.units} of {purchase.units}")
         sale_ = Sale(sale.datetime, sale.currency)
         purchase_ = Purchase(purchase.datetime, purchase.currency)
         disposal = Disposal(

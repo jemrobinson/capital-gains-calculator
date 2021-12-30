@@ -1,12 +1,12 @@
 from .purchase import Purchase
-from .disposal import Disposal
+from .disposal import Disposal, BedAndBreakfast
 
 
 class PooledPurchase(Purchase):
     def __init__(self, currency, **kwargs):
         kwargs["date_time"] = kwargs.get("date_time", "0001-01-01")
         super().__init__(currency=currency, **kwargs)
-        self.type = "POOLED"
+        self.type = "POOL"
 
     @classmethod
     def from_purchase(cls, p, currency):
@@ -35,6 +35,12 @@ class PooledPurchase(Purchase):
             raise ValueError(f"{disposal} is not a valid Purchase!")
         self.datetime = max([self.datetime, disposal.datetime])
         self.units = self.units - disposal.units
-        self.subtotal_ = self.subtotal + disposal.total_cost
+        self.subtotal_ = self.subtotal - disposal.purchase_total
         self.fees = self.fees + disposal.fees
         self.taxes = self.taxes + disposal.taxes
+
+    def add_bed_and_breakfast(self, bed_and_breakfast):
+        if not isinstance(bed_and_breakfast, BedAndBreakfast):
+            raise ValueError(f"{bed_and_breakfast} is not a valid BedAndBreakfast!")
+        self.datetime = max([self.datetime, bed_and_breakfast.datetime])
+        self.subtotal_ = self.subtotal + bed_and_breakfast.gain

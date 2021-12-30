@@ -1,8 +1,11 @@
 from .utils import as_money, abs_divide
-from .sale import Sale
+from .transaction import Transaction
+from moneyed import Money
 
 
-class Disposal(Sale):
+class Disposal(Transaction):
+    """A combined purchase and sale"""
+
     def __init__(
         self,
         date_time,
@@ -22,6 +25,11 @@ class Disposal(Sale):
         self.sale_total = as_money(sale_total, currency)
         self.sale_fees = as_money(sale_fees, currency)
         self.sale_taxes = as_money(sale_taxes, currency)
+        self.type = "DISPOSAL"
+
+    @property
+    def subtotal(self):
+        return Money(-1, self.currency)
 
     @property
     def unit_price_sold(self):
@@ -35,5 +43,28 @@ class Disposal(Sale):
     def gain(self):
         return self.sale_total - self.purchase_total
 
+    @property
+    def is_null(self):
+        return (self.sale_total == self.currency.zero) and (
+            self.purchase_total == self.currency.zero
+        )
+
     def __str__(self):
-        return f"Disposal :: date = {self.date}, units = {self.units}, purchase_total = {self.purchase_total}, sale_total = {self.sale_total}, gain = {self.gain}"
+        return f"Transaction: {self.type:8s} date = {self.date}, units = {self.units}, purchase_total = {self.purchase_total}, sale_total = {self.sale_total}, gain = {self.gain}"
+
+
+class BedAndBreakfast(Disposal):
+    """A disposal where the buying/selling are within 30 days"""
+
+    def __init__(self, disposal):
+        super().__init__(
+            disposal.datetime,
+            disposal.currency,
+            disposal.units,
+            disposal.purchase_total,
+            disposal.purchase_fees,
+            disposal.purchase_taxes,
+            disposal.sale_total,
+            disposal.sale_fees,
+            disposal.sale_taxes,
+        )
