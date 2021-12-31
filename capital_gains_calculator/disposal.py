@@ -1,6 +1,9 @@
-from .utils import as_money, abs_divide
-from .transaction import Transaction
+# Third party imports
 from moneyed import Money
+
+# Local imports
+from .transaction import Transaction
+from .utils import as_money, abs_divide
 
 
 class Disposal(Transaction):

@@ -1,5 +1,6 @@
-from .purchase import Purchase
+# Local imports
 from .disposal import Disposal, BedAndBreakfast
+from .purchase import Purchase
 
 
 class PooledPurchase(Purchase):

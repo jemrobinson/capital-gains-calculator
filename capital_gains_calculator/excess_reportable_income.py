@@ -1,3 +1,4 @@
+# Local imports
 from .purchase import Purchase
 
 

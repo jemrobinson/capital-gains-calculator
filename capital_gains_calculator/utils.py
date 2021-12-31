@@ -1,5 +1,8 @@
+# Standard library imports
 import datetime
 from decimal import InvalidOperation
+
+# Third party imports
 from dateutil.parser import parse
 from moneyed import Money
 from numpy import isnan

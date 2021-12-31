@@ -1,8 +1,11 @@
+# Standard library imports
 import logging
-from .purchase import Purchase
-from .pooled_purchase import PooledPurchase
-from .sale import Sale
+
+# Local imports
 from .disposal import Disposal
+from .pooled_purchase import PooledPurchase
+from .purchase import Purchase
+from .sale import Sale
 
 
 def exchange(purchases, sale):

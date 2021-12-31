@@ -1,4 +1,7 @@
+# Standard library imports
 from decimal import Decimal
+
+# Local imports
 from .utils import as_money, as_datetime, abs_divide
 
 
