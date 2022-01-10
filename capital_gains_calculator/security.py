@@ -1,15 +1,23 @@
+"""Definition of the Security class"""
+# Standard library imports
 import copy
-from .sale import Sale
-from .purchase import Purchase
-from .pooled_purchase import PooledPurchase
+import logging
+
+# Third party imports
+from moneyed import GBP
+
+# Local imports
 from .disposal import Disposal, BedAndBreakfast
 from .excess_reportable_income import ExcessReportableIncome
-from moneyed import GBP
+from .pooled_purchase import PooledPurchase
+from .purchase import Purchase
 from .reconcile import reconcile, exchange
-import logging
+from .sale import Sale
 
 
 class Security:
+    """Representation of a single security and associated transactions"""
+
     def __init__(self, symbol, name, currency=GBP):
         self.symbol = symbol
         self.name = name
@@ -26,9 +34,10 @@ class Security:
             output += f"   {transaction}\n"
         return output
 
-    def add_transactions(self, df):
-        for _, transaction in df.iterrows():
-            if transaction.Type == "Buy":
+    def add_transactions(self, df_transactions):
+        """Add transactions to the log"""
+        for _, transaction in df_transactions.iterrows():
+            if transaction.Type.lower() == "buy":
                 self.transactions.append(
                     Purchase(
                         transaction.Date,
@@ -40,7 +49,7 @@ class Security:
                         transaction.Note,
                     )
                 )
-            elif transaction.Type == "Sell":
+            elif transaction.Type.lower() == "sell":
                 self.transactions.append(
                     Sale(
                         transaction.Date,
@@ -52,13 +61,21 @@ class Security:
                         transaction.Note,
                     )
                 )
-            elif transaction.Note == "Excess reportable income":
+            elif (
+                transaction.Note
+                and str(transaction.Note).lower() == "excess reportable income"
+            ):
                 self.transactions.append(
                     ExcessReportableIncome(
                         transaction.Date, self.currency, transaction.Amount
                     )
                 )
-            elif transaction.Type in ["Fees Refund", "Dividend"]:
+            elif transaction.Type.lower() in [
+                "fees refund",
+                "dividend",
+                "dividends",
+                "fees_refund",
+            ]:
                 pass
             else:
                 raise ValueError(f"Unknown transaction!\n{transaction}")
@@ -66,9 +83,11 @@ class Security:
 
     @property
     def disposals(self):
+        """List of all disposals"""
         return [e for e in self.events if isinstance(e[0], Disposal)]
 
     def resolve_transactions(self):
+        """Resolve all transactions in the list"""
         # Sort transactions and separate into purchases and sales
         sorted_transactions = sorted(self.transactions, key=lambda t: t.datetime)
         purchases = list(filter(lambda t: isinstance(t, Purchase), sorted_transactions))
@@ -84,7 +103,7 @@ class Security:
                 "Combining sale with previous purchases as this is an exchange under HS285:"
             )
             logging.debug(f"  {sale}")
-            purchases_ = list(filter(lambda p: p.date < sale.date, purchases))
+            purchases_ = list(filter(lambda p, d=sale.date: p.date < d, purchases))
             purchase_, sale_, disposal = exchange(purchases_, sale)
             logging.debug(f"  {purchases_}")
             sales[idx_sale] = sale_
@@ -99,7 +118,7 @@ class Security:
         # Date-ordering any purchases between 0 and 30 days following the sale will automatically apply this
         for idx_sale, sale in enumerate(sales):
             for idx_purchase, purchase in filter(
-                lambda ptuple: 0 <= (ptuple[1].date - sale.date).days <= 30,
+                lambda ptuple, d=sale.date: 0 <= (ptuple[1].date - d).days <= 30,
                 enumerate(purchases),
             ):
                 logging.debug("Combining purchase and sale under HS284:")
@@ -164,7 +183,8 @@ class Security:
             logging.debug(f"Ending transaction with {pool.units} shares in the pool")
 
     def report(self):
-        logging.info(f"{self.name:88s} {f'({self.symbol})':>20s}")
+        """Produce a capital gains report"""
+        logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
         for transaction, pool in sorted(self.events, key=lambda e: e[0].datetime):
             date_prefix = f"  {transaction.date}:"
             date_spacing = " " * len(date_prefix)
@@ -175,35 +195,35 @@ class Security:
                 continue
             if isinstance(transaction, ExcessReportableIncome):
                 logging.info(
-                    f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':50} {str(transaction.total):>20s}"
+                    f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             elif isinstance(transaction, Purchase):
                 logging.info(
-                    f"{date_prefix} {f'Bought {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':50} {str(transaction.total):>20s}"
+                    f"{date_prefix} {f'Bought {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             elif isinstance(transaction, BedAndBreakfast):
                 logging.info(
-                    f"{date_prefix} {f'B&B: bought {transaction.units} shares at {transaction.unit_price_bought}':50} {str(transaction.purchase_total):>20}"
+                    f"{date_prefix} {f'B&B: bought {transaction.units} shares at {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
                 )
                 logging.info(
-                    f"{date_spacing} {f'B&B: sold {transaction.units} shares at {transaction.unit_price_sold}':50} {str(transaction.sale_total):>20}"
+                    f"{date_spacing} {f'B&B: sold {transaction.units} shares at {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
                 )
                 logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>20}"
+                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
                 )
             elif isinstance(transaction, Disposal):
                 logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.unit_price_sold} each':50} {str(transaction.sale_total):>20}"
+                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
                 )
                 logging.info(
-                    f"{date_spacing} {f'Cost of {transaction.units} shares from pool was {transaction.unit_price_bought} each':50} {str(transaction.purchase_total):>20}"
+                    f"{date_spacing} {f'Cost of {transaction.units} shares from pool was {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
                 )
                 logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>20}"
+                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
                 )
             elif isinstance(transaction, Sale):
                 logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':50} {str(transaction.total):>20s}"
+                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             else:
                 raise ValueError(

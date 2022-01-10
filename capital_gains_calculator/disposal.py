@@ -1,6 +1,10 @@
-from .utils import as_money, abs_divide
+"""Definition of the Disposal and BedAndBreakfast classes"""
+# # Third party imports
+# from moneyed import Money
+
+# Local imports
 from .transaction import Transaction
-from moneyed import Money
+from .utils import as_money, abs_divide
 
 
 class Disposal(Transaction):
@@ -29,22 +33,30 @@ class Disposal(Transaction):
 
     @property
     def subtotal(self):
-        return Money(-1, self.currency)
+        """Subtotal is not a valid property for this class"""
+        raise NotImplementedError(
+            "Subtotal is not a valid property for the Disposal class"
+        )
+        # return Money(-1, self.currency)
 
     @property
     def unit_price_sold(self):
+        """The unit price at which the units were sold"""
         return abs_divide(self.sale_total, self.units)
 
     @property
     def unit_price_bought(self):
+        """The unit price at which the units were bought"""
         return abs_divide(self.purchase_total, self.units)
 
     @property
     def gain(self):
+        """The capital gain made upon sale"""
         return self.sale_total - self.purchase_total
 
     @property
     def is_null(self):
+        """Whether this is a null transaction"""
         return (self.sale_total == self.currency.zero) and (
             self.purchase_total == self.currency.zero
         )
@@ -67,4 +79,11 @@ class BedAndBreakfast(Disposal):
             disposal.sale_total,
             disposal.sale_fees,
             disposal.sale_taxes,
+        )
+
+    @property
+    def subtotal(self):
+        """Subtotal is not a valid property for this class"""
+        raise NotImplementedError(
+            "Subtotal is not a valid property for the BedAndBreakfast class"
         )

@@ -1,14 +1,27 @@
+"""Utility functions related to reconciling transactions"""
+# Standard library imports
 import logging
-from .purchase import Purchase
-from .pooled_purchase import PooledPurchase
-from .sale import Sale
+
+# Local imports
 from .disposal import Disposal
+from .pooled_purchase import PooledPurchase
+from .purchase import Purchase
+from .sale import Sale
 
 
-def exchange(purchases, sale):
-    pool = PooledPurchase(purchases[0].currency)
-    for purchase in purchases:
-        pool.add_purchase(purchase)
+def exchange(transactions, sale):
+    """
+    Mark a sale as a direct exchange for a set of transactions.
+
+    This usually happens in the case of a stock split where all existing shares
+    are exchanged for a different number of new shares. In PortfolioPerformance
+    this is most easily modelled as a sale of all shares plus a purchase of new
+    ones. In this case, the sale should be an exchange against the sum of all
+    previous transactions.
+    """
+    pool = PooledPurchase(transactions[0].currency)
+    for transaction in transactions:
+        pool.add_purchase(transaction)
     if pool.units != sale.units:
         raise ValueError(
             f"Unable to match pool with {pool.units} shares against exchange-sale with {sale.units}"
@@ -17,6 +30,7 @@ def exchange(purchases, sale):
 
 
 def reconcile(purchase, sale):
+    """Reconcile a single purchase with a single sale"""
     if not isinstance(purchase, Purchase):
         raise ValueError(f"{purchase} is not a purchase!")
     if not isinstance(sale, Sale):
