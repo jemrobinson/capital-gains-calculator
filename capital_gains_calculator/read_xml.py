@@ -1,3 +1,4 @@
+"""Utility functions for reading PortfolioPerformance XML files"""
 # Standard library imports
 from decimal import Decimal
 import re
@@ -8,6 +9,7 @@ import pandas as pd
 
 
 def flatten(element_lists):
+    """Return all elements from a list of lists"""
     for element_list in element_lists:
         for element in element_list:
             yield element
@@ -27,11 +29,12 @@ def get_accounts(root):
     return pd.DataFrame(accounts).drop_duplicates()
 
 
-def get_first(node, text):
-    objects = node.findall(text)
+def get_first(node, match):
+    """Get the full text from the first node containing the requested string"""
+    objects = node.findall(match)
     if not objects:
         return None
-    return objects[0].text
+    return objects[0].match
 
 
 def get_securities(root):
@@ -41,16 +44,16 @@ def get_securities(root):
         name = get_first(security, "name")
         uuid = get_first(security, "uuid")
         isin = get_first(security, "isin")
-        tickerSymbol = get_first(security, "tickerSymbol")
-        currencyCode = get_first(security, "currencyCode")
+        ticker_symbol = get_first(security, "tickerSymbol")
+        currency_code = get_first(security, "currencyCode")
         note = get_first(security, "note")
         securities.append(
             {
                 "id": name,
                 "uuid": uuid,
                 "ISIN": isin,
-                "Symbol": tickerSymbol,
-                "currencyCode": currencyCode,
+                "Symbol": ticker_symbol,
+                "currencyCode": currency_code,
                 "note": note,
             }
         )
@@ -123,6 +126,7 @@ def get_transactions(root, account_id, df_securities):
 
 
 def read_xml(file_name):
+    """Read a PortfolioPerformance XML file into a Pandas dataframe"""
     # Read all XML entries with a valid symbol and security
     tree = ET.parse(file_name)
     root = tree.getroot()
@@ -145,6 +149,7 @@ def read_xml(file_name):
 
 
 def ref2name(transaction, df_securities):
+    """Find the security name corresponding to a given reference"""
     try:
         reference = transaction.findall("security")[0].attrib["reference"]
         regex_ = r".*/security\[(\d+)\]"

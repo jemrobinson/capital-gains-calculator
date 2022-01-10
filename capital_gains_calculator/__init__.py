@@ -1,3 +1,4 @@
+"""Capital Gains Calculator"""
 from .disposal import Disposal
 from .purchase import Purchase
 from .sale import Sale
@@ -6,10 +7,10 @@ from .security import Security
 from .transaction import Transaction
 
 __all__ = [
-    Disposal,
-    Purchase,
-    read_xml,
-    Sale,
-    Security,
-    Transaction,
+    "Disposal",
+    "Purchase",
+    "read_xml",
+    "Sale",
+    "Security",
+    "Transaction",
 ]

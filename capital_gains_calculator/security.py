@@ -1,3 +1,4 @@
+"""Definition of the Security class"""
 # Standard library imports
 import copy
 import logging
@@ -15,6 +16,8 @@ from .sale import Sale
 
 
 class Security:
+    """Representation of a single security and associated transactions"""
+
     def __init__(self, symbol, name, currency=GBP):
         self.symbol = symbol
         self.name = name
@@ -31,8 +34,9 @@ class Security:
             output += f"   {transaction}\n"
         return output
 
-    def add_transactions(self, df):
-        for _, transaction in df.iterrows():
+    def add_transactions(self, df_transactions):
+        """Add transactions to the log"""
+        for _, transaction in df_transactions.iterrows():
             if transaction.Type.lower() == "buy":
                 self.transactions.append(
                     Purchase(
@@ -79,9 +83,11 @@ class Security:
 
     @property
     def disposals(self):
+        """List of all disposals"""
         return [e for e in self.events if isinstance(e[0], Disposal)]
 
     def resolve_transactions(self):
+        """Resolve all transactions in the list"""
         # Sort transactions and separate into purchases and sales
         sorted_transactions = sorted(self.transactions, key=lambda t: t.datetime)
         purchases = list(filter(lambda t: isinstance(t, Purchase), sorted_transactions))
@@ -97,7 +103,7 @@ class Security:
                 "Combining sale with previous purchases as this is an exchange under HS285:"
             )
             logging.debug(f"  {sale}")
-            purchases_ = list(filter(lambda p: p.date < sale.date, purchases))
+            purchases_ = list(filter(lambda p, d=sale.date: p.date < d, purchases))
             purchase_, sale_, disposal = exchange(purchases_, sale)
             logging.debug(f"  {purchases_}")
             sales[idx_sale] = sale_
@@ -112,7 +118,7 @@ class Security:
         # Date-ordering any purchases between 0 and 30 days following the sale will automatically apply this
         for idx_sale, sale in enumerate(sales):
             for idx_purchase, purchase in filter(
-                lambda ptuple: 0 <= (ptuple[1].date - sale.date).days <= 30,
+                lambda ptuple, d=sale.date: 0 <= (ptuple[1].date - d).days <= 30,
                 enumerate(purchases),
             ):
                 logging.debug("Combining purchase and sale under HS284:")
@@ -177,6 +183,7 @@ class Security:
             logging.debug(f"Ending transaction with {pool.units} shares in the pool")
 
     def report(self):
+        """Produce a capital gains report"""
         logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
         for transaction, pool in sorted(self.events, key=lambda e: e[0].datetime):
             date_prefix = f"  {transaction.date}:"

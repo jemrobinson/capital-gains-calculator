@@ -17,6 +17,6 @@ jobs:
       - name: Check style with black
         run: poetry run black --check .
       - name: Check style with pylint
-        run: poetry run pylint capital_gains_calculator --disable=C0301
+        run: poetry run pylint capital_gains_calculator
       - name: Check style with flake8
         run: poetry run flake8 .
