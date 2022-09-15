@@ -9,7 +9,7 @@ from numpy import datetime64
 import pandas as pd
 
 # Local imports
-from capital_gains_calculator import read_xml, Security
+from uk_tax_report import read_xml, Security
 
 
 def load_csv(file_name):

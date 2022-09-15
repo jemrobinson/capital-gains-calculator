@@ -2,20 +2,21 @@
 # Standard library imports
 from decimal import Decimal
 import re
+from typing import Iterable, List
 import xml.etree.ElementTree as ET
 
 # Third party imports
 import pandas as pd
 
 
-def flatten(element_lists):
+def flatten(element_lists: List[List[ET.Element]]) -> Iterable[ET.Element]:
     """Return all elements from a list of lists"""
     for element_list in element_lists:
         for element in element_list:
             yield element
 
 
-def get_accounts(root):
+def get_accounts(root: ET.Element) -> pd.DataFrame:
     """Get accounts"""
     accounts = []
     for account in (
@@ -29,15 +30,15 @@ def get_accounts(root):
     return pd.DataFrame(accounts).drop_duplicates()
 
 
-def get_first(node, match):
+def get_first(node: ET.Element, match: str) -> str:
     """Get the full text from the first node containing the requested string"""
     objects = node.findall(match)
     if not objects:
         return None
-    return objects[0].match
+    return objects[0].text
 
 
-def get_securities(root):
+def get_securities(root: ET.Element):
     """Get securities"""
     securities = []
     for security in flatten(root.findall("securities")):
@@ -60,7 +61,7 @@ def get_securities(root):
     return pd.DataFrame(securities).drop_duplicates()
 
 
-def get_transactions(root, account_id, df_securities):
+def get_transactions(root: ET.Element, account_id, df_securities):
     """Get transactions"""
     transactions = []
     for transaction in (
@@ -125,7 +126,7 @@ def get_transactions(root, account_id, df_securities):
     return pd.DataFrame(transactions).drop_duplicates()
 
 
-def read_xml(file_name):
+def read_xml(file_name: str) -> pd.DataFrame:
     """Read a PortfolioPerformance XML file into a Pandas dataframe"""
     # Read all XML entries with a valid symbol and security
     tree = ET.parse(file_name)
@@ -148,7 +149,7 @@ def read_xml(file_name):
     return df_all
 
 
-def ref2name(transaction, df_securities):
+def ref2name(transaction: str, df_securities: pd.DataFrame) -> str:
     """Find the security name corresponding to a given reference"""
     try:
         reference = transaction.findall("security")[0].attrib["reference"]
