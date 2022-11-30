@@ -1,6 +1,7 @@
 """Utility functions related to reconciling transactions"""
 # Standard library imports
 import logging
+from typing import List, Tuple
 
 # Local imports
 from .disposal import Disposal
@@ -9,7 +10,7 @@ from .purchase import Purchase
 from .sale import Sale
 
 
-def exchange(transactions, sale):
+def exchange(purchases: List[Purchase], sale: Sale) -> Tuple[Purchase, Sale, Disposal]:
     """
     Mark a sale as a direct exchange for a set of transactions.
 
@@ -19,8 +20,8 @@ def exchange(transactions, sale):
     ones. In this case, the sale should be an exchange against the sum of all
     previous transactions.
     """
-    pool = PooledPurchase(transactions[0].currency)
-    for transaction in transactions:
+    pool = PooledPurchase(purchases[0].currency)
+    for transaction in purchases:
         pool.add_purchase(transaction)
     if pool.units != sale.units:
         raise ValueError(
@@ -29,7 +30,7 @@ def exchange(transactions, sale):
     return reconcile(pool, sale)
 
 
-def reconcile(purchase, sale):
+def reconcile(purchase: Purchase, sale: Sale) -> Tuple[Purchase, Sale, Disposal]:
     """Reconcile a single purchase with a single sale"""
     if not isinstance(purchase, Purchase):
         raise ValueError(f"{purchase} is not a purchase!")

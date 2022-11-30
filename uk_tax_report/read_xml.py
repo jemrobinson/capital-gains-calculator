@@ -1,9 +1,9 @@
 """Utility functions for reading PortfolioPerformance XML files"""
 # Standard library imports
-from decimal import Decimal
 import re
-from typing import Iterable, List
 import xml.etree.ElementTree as ET
+from decimal import Decimal
+from typing import Iterable, List
 
 # Third party imports
 import pandas as pd

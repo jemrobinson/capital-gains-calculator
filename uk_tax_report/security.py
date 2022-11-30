@@ -2,28 +2,32 @@
 # Standard library imports
 import copy
 import logging
+from datetime import date
+from typing import List, Tuple
 
 # Third party imports
-from moneyed import GBP
+import pandas as pd
+from moneyed import GBP, Currency
 
 # Local imports
-from .disposal import Disposal, BedAndBreakfast
+from .disposal import BedAndBreakfast, Disposal
 from .excess_reportable_income import ExcessReportableIncome
 from .pooled_purchase import PooledPurchase
 from .purchase import Purchase
-from .reconcile import reconcile, exchange
+from .reconcile import exchange, reconcile
 from .sale import Sale
+from .transaction import Transaction
 
 
 class Security:
     """Representation of a single security and associated transactions"""
 
-    def __init__(self, symbol, name, currency=GBP):
+    def __init__(self, symbol: str, name: str, currency: Currency = GBP):
         self.symbol = symbol
         self.name = name
         self.currency = currency
-        self.transactions = []
-        self.events = []
+        self.transactions: List[Transaction] = []
+        self.events: List[Tuple[Transaction, PooledPurchase]] = []
 
     def __repr__(self):
         return f"Security({self.name} [{self.symbol}])"
@@ -34,7 +38,7 @@ class Security:
             output += f"   {transaction}\n"
         return output
 
-    def add_transactions(self, df_transactions):
+    def add_transactions(self, df_transactions: pd.DataFrame) -> None:
         """Add transactions to the log"""
         for _, transaction in df_transactions.iterrows():
             if transaction.Type.lower() == "buy":
@@ -82,11 +86,11 @@ class Security:
         self.resolve_transactions()
 
     @property
-    def disposals(self):
+    def disposals(self) -> List[Tuple[Transaction, PooledPurchase]]:
         """List of all disposals"""
         return [e for e in self.events if isinstance(e[0], Disposal)]
 
-    def resolve_transactions(self):
+    def resolve_transactions(self) -> None:
         """Resolve all transactions in the list"""
         # Sort transactions and separate into purchases and sales
         sorted_transactions = sorted(self.transactions, key=lambda t: t.datetime)
@@ -182,10 +186,20 @@ class Security:
                 )
             logging.debug(f"Ending transaction with {pool.units} shares in the pool")
 
-    def report(self):
+    def report_capital_gains(
+        self, start_date: date = None, end_date: date = None
+    ) -> None:
         """Produce a capital gains report"""
+        # If there are no disposals in the time range there can be no capital gains
+        if not any(start_date <= d[0].date <= end_date for d in self.disposals):
+            return
+
+        # Generate the capital gains report
         logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
         for transaction, pool in sorted(self.events, key=lambda e: e[0].datetime):
+            # Ignore any transactions after the end of the tax year
+            if transaction.datetime.date() > end_date:
+                continue
             date_prefix = f"  {transaction.date}:"
             date_spacing = " " * len(date_prefix)
             logging.debug(f"Processing event of type {type(transaction).__name__}:")

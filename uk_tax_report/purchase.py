@@ -1,4 +1,7 @@
 """Definition of the Purchase class"""
+# Third-party imports
+from moneyed import Money
+
 # Local imports
 from .transaction import Transaction
 
@@ -8,8 +11,8 @@ class Purchase(Transaction):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.type = "BOUGHT"
+        self.type: str = "BOUGHT"
 
     @property
-    def subtotal(self):
+    def subtotal(self) -> Money:
         return self.subtotal_

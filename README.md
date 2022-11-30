@@ -1,6 +1,6 @@
-# capital-gains-calculator
+# UK tax report
 
-UK capital gains calculator for `Portfolio Performance`
+UK tax report using `Portfolio Performance` data.
 
 ## Prepare your portfolio
 
