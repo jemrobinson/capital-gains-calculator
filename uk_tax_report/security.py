@@ -11,6 +11,7 @@ from moneyed import GBP, Currency
 
 # Local imports
 from .disposal import BedAndBreakfast, Disposal
+from .dividend import Dividend
 from .excess_reportable_income import ExcessReportableIncome
 from .pooled_purchase import PooledPurchase
 from .purchase import Purchase
@@ -27,7 +28,7 @@ class Security:
         self.name = name
         self.currency = currency
         self.transactions: List[Transaction] = []
-        self.events: List[Tuple[Transaction, PooledPurchase]] = []
+        self.events_: List[Tuple[Transaction, PooledPurchase]] = []
 
     def __repr__(self):
         return f"Security({self.name} [{self.symbol}])"
@@ -74,10 +75,21 @@ class Security:
                         transaction.Date, self.currency, transaction.Amount
                     )
                 )
+            elif transaction.Type.lower() in ["dividend", "dividends"]:
+                # print(f"found it {transaction}")
+                self.transactions.append(
+                    Dividend(
+                        transaction.Date,
+                        self.currency,
+                        transaction.Shares,
+                        transaction.Amount,
+                        transaction.Fees,
+                        transaction.Taxes,
+                        transaction.Note,
+                    )
+                )
             elif transaction.Type.lower() in [
                 "fees refund",
-                "dividend",
-                "dividends",
                 "fees_refund",
             ]:
                 pass
@@ -89,6 +101,106 @@ class Security:
     def disposals(self) -> List[Tuple[Transaction, PooledPurchase]]:
         """List of all disposals"""
         return [e for e in self.events if isinstance(e[0], Disposal)]
+
+    @property
+    def events(self) -> List[Tuple[Transaction, PooledPurchase]]:
+        """Return sorted events"""
+        self.events_.sort(key=lambda e: e[0].datetime)
+        return self.events_
+
+    def is_held(self, start_date: date = None, end_date: date = None) -> bool:
+        """Was this security held between the specified dates (inclusive)?"""
+        # Check whether any units were held on the start date
+        events_before = [
+            event for event in self.events if event[0].datetime.date() < start_date
+        ]
+        if events_before:
+            if events_before[-1][1].units > 0:
+                return True
+        # Check whether any units were held during the year
+        for event in filter(
+            lambda e: start_date <= e[0].datetime.date() <= end_date, self.events
+        ):
+            if event[1].units > 0:
+                return True
+        return False
+
+    def report_capital_gains(
+        self, start_date: date = None, end_date: date = None
+    ) -> None:
+        """Produce a capital gains report"""
+        # If there are no disposals in the time range there can be no capital gains
+        if not any(start_date <= d[0].date <= end_date for d in self.disposals):
+            return
+
+        # Generate the capital gains report
+        logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
+        for transaction, pool in self.events:
+            # Ignore any transactions after the end of the tax year
+            if transaction.datetime.date() > end_date:
+                continue
+            date_prefix = f"  {transaction.date}:"
+            date_spacing = " " * len(date_prefix)
+            logging.debug(f"Processing event of type {type(transaction).__name__}:")
+            logging.debug(f"=> {str(transaction)}")
+            if transaction.is_null:
+                logging.debug(f"Skipping transaction {str(transaction)}")
+                continue
+            if isinstance(transaction, ExcessReportableIncome):
+                logging.info(
+                    f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                )
+            elif isinstance(transaction, Purchase):
+                logging.info(
+                    f"{date_prefix} {f'Bought {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                )
+            elif isinstance(transaction, BedAndBreakfast):
+                logging.info(
+                    f"{date_prefix} {f'B&B: bought {transaction.units} shares at {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
+                )
+                logging.info(
+                    f"{date_spacing} {f'B&B: sold {transaction.units} shares at {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
+                )
+                logging.info(
+                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
+                )
+            elif isinstance(transaction, Disposal):
+                logging.info(
+                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
+                )
+                logging.info(
+                    f"{date_spacing} {f'Cost of {transaction.units} shares from pool was {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
+                )
+                logging.info(
+                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
+                )
+            elif isinstance(transaction, Sale):
+                logging.info(
+                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                )
+            else:
+                raise ValueError(
+                    f"Unknown event of type {type(transaction).__name__}:\n {transaction}"
+                )
+            logging.info(
+                f"{date_spacing} Pool: {pool.units} shares, cost {str(pool.total)}"
+            )
+
+    def report_dividends(self, start_date: date = None, end_date: date = None) -> None:
+        """Produce a dividends report"""
+        # Load all dividend transactions between the dates
+        dividends = [
+            t
+            for t in self.transactions
+            if (start_date <= t.datetime.date() <= end_date) and isinstance(t, Dividend)
+        ]
+        # If there are dividends then log them
+        if dividends:
+            logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
+            for dividend in dividends:
+                logging.info(
+                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares at {dividend.unit_price} each':52} {str(dividend.total):>18}"
+                )
 
     def resolve_transactions(self) -> None:
         """Resolve all transactions in the list"""
@@ -139,7 +251,7 @@ class Security:
         transactions = [t for t in purchases + sales + disposals if t]
 
         # Each remaining sale can be converted into a disposal against the existing pool
-        self.events = []
+        self.events_ = []
         pool = PooledPurchase(self.currency)
         for transaction in sorted(transactions, key=lambda t: t.datetime):
             logging.debug(
@@ -152,7 +264,7 @@ class Security:
                 )
                 logging.debug(f"  {transaction}")
                 pool.add_purchase(transaction)
-                self.events.append((transaction, pool))
+                self.events_.append((transaction, pool))
             elif isinstance(transaction, Purchase):
                 logging.debug(f"=> Found a Purchase on {transaction.date}:")
                 logging.debug(f"  {transaction}")
@@ -162,12 +274,12 @@ class Security:
                 logging.debug(f"=> Found a BedAndBreakfast on {transaction.date}:")
                 logging.debug(f"  {transaction}")
                 pool.add_bed_and_breakfast(transaction)
-                self.events.append((transaction, pool))
+                self.events_.append((transaction, pool))
             elif isinstance(transaction, Disposal):
                 logging.debug(f"=> Found a Disposal on {transaction.date}:")
                 logging.debug(f"  {transaction}")
                 pool.add_disposal(transaction)
-                self.events.append((transaction, pool))
+                self.events_.append((transaction, pool))
             elif isinstance(transaction, Sale):
                 logging.debug(f"=> Found a Sale on {transaction.date}:")
                 logging.debug(f"  {transaction}")
@@ -179,70 +291,9 @@ class Security:
                 if sale.total:
                     raise ValueError(f"Found an unexpected Sale {sale}")
                 pool.add_disposal(disposal)
-                self.events.append((disposal, pool))
+                self.events_.append((disposal, pool))
             else:
                 raise ValueError(
                     f"Unknown event of type {type(transaction).__name__}:\n {transaction}"
                 )
             logging.debug(f"Ending transaction with {pool.units} shares in the pool")
-
-    def report_capital_gains(
-        self, start_date: date = None, end_date: date = None
-    ) -> None:
-        """Produce a capital gains report"""
-        # If there are no disposals in the time range there can be no capital gains
-        if not any(start_date <= d[0].date <= end_date for d in self.disposals):
-            return
-
-        # Generate the capital gains report
-        logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
-        for transaction, pool in sorted(self.events, key=lambda e: e[0].datetime):
-            # Ignore any transactions after the end of the tax year
-            if transaction.datetime.date() > end_date:
-                continue
-            date_prefix = f"  {transaction.date}:"
-            date_spacing = " " * len(date_prefix)
-            logging.debug(f"Processing event of type {type(transaction).__name__}:")
-            logging.debug(f"=> {str(transaction)}")
-            if transaction.is_null:
-                logging.debug(f"Skipping transaction {str(transaction)}")
-                continue
-            if isinstance(transaction, ExcessReportableIncome):
-                logging.info(
-                    f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
-                )
-            elif isinstance(transaction, Purchase):
-                logging.info(
-                    f"{date_prefix} {f'Bought {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
-                )
-            elif isinstance(transaction, BedAndBreakfast):
-                logging.info(
-                    f"{date_prefix} {f'B&B: bought {transaction.units} shares at {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {f'B&B: sold {transaction.units} shares at {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
-                )
-            elif isinstance(transaction, Disposal):
-                logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {f'Cost of {transaction.units} shares from pool was {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
-                )
-            elif isinstance(transaction, Sale):
-                logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
-                )
-            else:
-                raise ValueError(
-                    f"Unknown event of type {type(transaction).__name__}:\n {transaction}"
-                )
-            logging.info(
-                f"{date_spacing} Pool: {pool.units} shares, cost {str(pool.total)}"
-            )

@@ -39,6 +39,14 @@ class Account:
                 ]
             )
 
+    def holdings(self, start_date: date, end_date: date) -> List[Security]:
+        """List of securities held between these dates"""
+        return [
+            security
+            for security in self.securities
+            if security.is_held(start_date, end_date)
+        ]
+
     @property
     def transactions(self) -> List[Transaction]:
         """List of transactions in this account"""
@@ -51,12 +59,26 @@ class Account:
             f"Account '{self.name}' has {len(self.transactions)} transactions across {len(self.securities)} securities"
         )
 
+        # Holdings
+        logging.info(
+            f"Listing holdings during UK tax year {start_date.year}-{end_date.year}..."
+        )
+        for security in self.holdings(start_date, end_date):
+            logging.info(f"  {f'[{security.symbol}]':11} {security.name}")
+
         # Capital gains
         logging.info(
             f"Looking for capital gains during UK tax year {start_date.year}-{end_date.year}..."
         )
         for security in self.securities:
             security.report_capital_gains(start_date, end_date)
+
+        # Dividends
+        logging.info(
+            f"Looking for dividends during UK tax year {start_date.year}-{end_date.year}..."
+        )
+        for security in self.securities:
+            security.report_dividends(start_date, end_date)
 
     def __str__(self) -> str:
         return f"Account '{self.name}' has {len(self.securities)} securities"
