@@ -70,9 +70,10 @@ class Security:
                 transaction.Note
                 and str(transaction.Note).lower() == "excess reportable income"
             ):
+                # Note that ERIs are determined six months before they are booked as income
                 self.transactions.append(
                     ExcessReportableIncome(
-                        transaction.Date, self.currency, transaction.Amount
+                        transaction.Date - pd.DateOffset(months=6), self.currency, transaction.Amount
                     )
                 )
             elif transaction.Type.lower() in ["dividend", "dividends"]:
