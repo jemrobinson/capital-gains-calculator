@@ -17,6 +17,7 @@ from .pooled_purchase import PooledPurchase
 from .purchase import Purchase
 from .reconcile import exchange, reconcile
 from .sale import Sale
+from .scrip_dividend import ScripDividend
 from .transaction import Transaction
 
 
@@ -43,8 +44,21 @@ class Security:
         """Add transactions to the log"""
         for _, transaction in df_transactions.iterrows():
             if transaction.Type.lower() == "buy":
-                self.transactions.append(
-                    Purchase(
+                if (
+                    transaction.Note
+                    and str(transaction.Note).lower() == "scrip dividend"
+                ):
+                    bought = ScripDividend(
+                        transaction.Date,
+                        self.currency,
+                        transaction.Shares,
+                        0,
+                        transaction.Fees,
+                        transaction.Taxes,
+                        transaction.Note,
+                    )
+                else:
+                    bought = Purchase(
                         transaction.Date,
                         self.currency,
                         transaction.Shares,
@@ -53,7 +67,7 @@ class Security:
                         transaction.Taxes,
                         transaction.Note,
                     )
-                )
+                self.transactions.append(bought)
             elif transaction.Type.lower() == "sell":
                 self.transactions.append(
                     Sale(
@@ -73,22 +87,27 @@ class Security:
                 # Note that ERIs are determined six months before they are booked as income
                 self.transactions.append(
                     ExcessReportableIncome(
-                        transaction.Date - pd.DateOffset(months=6), self.currency, transaction.Amount
+                        transaction.Date - pd.DateOffset(months=6),
+                        self.currency,
+                        transaction.Amount,
                     )
                 )
             elif transaction.Type.lower() in ["dividend", "dividends"]:
-                # print(f"found it {transaction}")
-                self.transactions.append(
-                    Dividend(
-                        transaction.Date,
-                        self.currency,
-                        transaction.Shares,
-                        transaction.Amount,
-                        transaction.Fees,
-                        transaction.Taxes,
-                        transaction.Note,
+                if not (
+                    transaction.Note
+                    and str(transaction.Note).lower() == "scrip dividend"
+                ):
+                    self.transactions.append(
+                        Dividend(
+                            transaction.Date,
+                            self.currency,
+                            transaction.Shares,
+                            transaction.Amount,
+                            transaction.Fees,
+                            transaction.Taxes,
+                            transaction.Note,
+                        )
                     )
-                )
             elif transaction.Type.lower() in [
                 "fees refund",
                 "fees_refund",
@@ -150,6 +169,10 @@ class Security:
             if isinstance(transaction, ExcessReportableIncome):
                 logging.info(
                     f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                )
+            elif isinstance(transaction, ScripDividend):
+                logging.info(
+                    f"{date_prefix} {f'Scrip dividend of {transaction.units} shares':52} {str(transaction.total):>18s}"
                 )
             elif isinstance(transaction, Purchase):
                 logging.info(
@@ -259,15 +282,10 @@ class Security:
                 f"Starting a transaction with {pool.units} shares in the pool"
             )
             pool = copy.deepcopy(pool)
-            if isinstance(transaction, ExcessReportableIncome):
+            if isinstance(transaction, Purchase):
                 logging.debug(
-                    f"=> Found an ExcessReportableIncome event on {transaction.date}:"
+                    f"=> Found a {type(transaction).__name__} on {transaction.date}:"
                 )
-                logging.debug(f"  {transaction}")
-                pool.add_purchase(transaction)
-                self.events_.append((transaction, pool))
-            elif isinstance(transaction, Purchase):
-                logging.debug(f"=> Found a Purchase on {transaction.date}:")
                 logging.debug(f"  {transaction}")
                 pool.add_purchase(transaction)
                 self.events.append((transaction, pool))
