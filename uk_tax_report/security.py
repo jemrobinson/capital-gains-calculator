@@ -100,7 +100,7 @@ class Security:
                 continue
             if isinstance(transaction, ExcessReportableIncome):
                 logging.info(
-                    f"{date_prefix} {f'ERI of {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                    f"{date_prefix} {f'ERI of {transaction.units} shares @ {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             elif isinstance(transaction, ScripDividend):
                 logging.info(
@@ -108,38 +108,48 @@ class Security:
                 )
             elif isinstance(transaction, Purchase):
                 logging.info(
-                    f"{date_prefix} {f'Bought {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                    f"{date_prefix} {f'Bought {transaction.units} shares for {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             elif isinstance(transaction, BedAndBreakfast):
                 logging.info(
-                    f"{date_prefix} {f'B&B: bought {transaction.units} shares at {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
+                    f"{date_prefix} {f'B&B: bought {transaction.units} shares @ {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
                 )
                 logging.info(
-                    f"{date_spacing} {f'B&B: sold {transaction.units} shares at {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
+                    f"{date_spacing} {f'B&B: sold {transaction.units} shares @ {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
                 )
-                logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
-                )
+                if start_date <= transaction.datetime.date() <= end_date:
+                    logging.info(
+                        f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
+                    )
+                else:
+                    logging.info(
+                        f"{date_spacing} Resulting gain applies to another tax year"
+                    )
             elif isinstance(transaction, Disposal):
                 logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
+                    f"{date_prefix} {f'Sold {transaction.units} shares @ {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
                 )
-                logging.info(
-                    f"{date_spacing} {f'Cost of {transaction.units} shares from pool was {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
-                )
+                if start_date <= transaction.datetime.date() <= end_date:
+                    logging.info(
+                        f"{date_spacing} {f'Cost of {transaction.units} shares from pool @ {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
+                    )
+                    logging.info(
+                        f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
+                    )
+                else:
+                    logging.info(
+                        f"{date_spacing} Resulting gain applies to another tax year"
+                    )
             elif isinstance(transaction, Sale):
                 logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares at {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                    f"{date_prefix} {f'Sold {transaction.units} shares @ {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
             else:
                 raise ValueError(
                     f"Unknown event of type {type(transaction).__name__}:\n {transaction}"
                 )
             logging.info(
-                f"{date_spacing} Pool: {pool.units} shares, cost {str(pool.total)}"
+                f"{date_spacing} Pool: {pool.units} shares @ {pool.unit_price_inc} each, cost {str(pool.total)} "
             )
 
     def report_dividends(self, start_date: date = None, end_date: date = None) -> None:
@@ -155,7 +165,7 @@ class Security:
             logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
             for dividend in dividends:
                 logging.info(
-                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares at {dividend.unit_price} each':52} {str(dividend.total):>18}"
+                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares @ {dividend.unit_price} each':52} {str(dividend.total):>18}"
                 )
 
     def resolve_transactions(self) -> None:

@@ -53,6 +53,10 @@ class Account:
         return other + self
 
     @property
+    def taxable_securities(self) -> List[Security]:
+        return [s for s in self.securities if not "VCT" in s.name]
+
+    @property
     def transactions(self) -> List[Transaction]:
         """List of transactions in this account"""
         return sum([security.transactions for security in self.securities], [])
@@ -83,14 +87,14 @@ class Account:
         logging.info(
             f"Looking for capital gains during UK tax year {start_date.year}-{end_date.year}..."
         )
-        for security in self.securities:
+        for security in self.taxable_securities:
             security.report_capital_gains(start_date, end_date)
 
         # Dividends
         logging.info(
             f"Looking for dividends during UK tax year {start_date.year}-{end_date.year}..."
         )
-        for security in self.securities:
+        for security in self.taxable_securities:
             security.report_dividends(start_date, end_date)
 
     def __str__(self) -> str:
