@@ -1,13 +1,25 @@
 """General utility functions for converting between types"""
 # Standard library imports
 import datetime
+from contextlib import suppress
 from decimal import InvalidOperation
 from math import isnan
 from typing import Any
 
 # Third party imports
 from dateutil.parser import parse
-from moneyed import Currency, Money
+from moneyed import Currency, CurrencyDoesNotExist, Money, get_currency
+
+
+def as_currency(data: Any) -> Currency:
+    """Convert arbitrary data into Currency"""
+    if isinstance(data, Currency):
+        return data
+    with suppress(CurrencyDoesNotExist):
+        return get_currency(code=data)
+    with suppress(CurrencyDoesNotExist):
+        return get_currency(iso=data)
+    raise CurrencyDoesNotExist(data)
 
 
 def as_money(data: Any, currency: Currency) -> Money:

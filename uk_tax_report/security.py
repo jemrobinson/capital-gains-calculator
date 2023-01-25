@@ -6,8 +6,7 @@ from datetime import date
 from typing import List, Tuple
 
 # Third party imports
-import pandas as pd
-from moneyed import GBP, Currency
+from moneyed import Currency
 
 # Local imports
 from .reconcile import exchange, reconcile
@@ -27,7 +26,7 @@ from .transactions import (
 class Security:
     """Representation of a single security and associated transactions"""
 
-    def __init__(self, symbol: str, name: str, currency: Currency = GBP):
+    def __init__(self, symbol: str, name: str, currency: Currency):
         self.symbol = symbol
         self.name = name
         self.currency = currency
@@ -43,81 +42,11 @@ class Security:
             output += f"   {transaction}\n"
         return output
 
-    def add_transactions(self, df_transactions: pd.DataFrame) -> None:
-        """Add transactions to the log"""
-        for _, transaction in df_transactions.iterrows():
-            if transaction.Type.lower() == "buy":
-                if (
-                    transaction.Note
-                    and str(transaction.Note).lower() == "scrip dividend"
-                ):
-                    bought = ScripDividend(
-                        transaction.Date,
-                        self.currency,
-                        transaction.Shares,
-                        0,
-                        transaction.Fees,
-                        transaction.Taxes,
-                        transaction.Note,
-                    )
-                else:
-                    bought = Purchase(
-                        transaction.Date,
-                        self.currency,
-                        transaction.Shares,
-                        transaction.Amount,
-                        transaction.Fees,
-                        transaction.Taxes,
-                        transaction.Note,
-                    )
-                self.transactions.append(bought)
-            elif transaction.Type.lower() == "sell":
-                self.transactions.append(
-                    Sale(
-                        transaction.Date,
-                        self.currency,
-                        transaction.Shares,
-                        transaction.Amount,
-                        transaction.Fees,
-                        transaction.Taxes,
-                        transaction.Note,
-                    )
-                )
-            elif (
-                transaction.Note
-                and str(transaction.Note).lower() == "excess reportable income"
-            ):
-                # Note that ERIs are determined six months before they are booked as income
-                self.transactions.append(
-                    ExcessReportableIncome(
-                        transaction.Date - pd.DateOffset(months=6),
-                        self.currency,
-                        transaction.Amount,
-                    )
-                )
-            elif transaction.Type.lower() in ["dividend", "dividends"]:
-                if not (
-                    transaction.Note
-                    and str(transaction.Note).lower() == "scrip dividend"
-                ):
-                    self.transactions.append(
-                        Dividend(
-                            transaction.Date,
-                            self.currency,
-                            transaction.Shares,
-                            transaction.Amount,
-                            transaction.Fees,
-                            transaction.Taxes,
-                            transaction.Note,
-                        )
-                    )
-            elif transaction.Type.lower() in [
-                "fees refund",
-                "fees_refund",
-            ]:
-                pass
-            else:
-                raise ValueError(f"Unknown transaction!\n{transaction}")
+    def add_transactions(self, transactions: List[Transaction]) -> None:
+        """Add new transactions then resolve them together with existing transactions"""
+        # Add new transactions
+        self.transactions += transactions
+        # Resolve all transactions
         self.resolve_transactions()
 
     @property
@@ -232,6 +161,9 @@ class Security:
     def resolve_transactions(self) -> None:
         """Resolve all transactions in the list"""
         # Sort transactions and separate into purchases and sales
+        logging.debug(
+            f"Resolving {len(self.transactions)} transactions for {self.name} ({self.symbol})"
+        )
         sorted_transactions = sorted(self.transactions, key=lambda t: t.datetime)
         purchases = list(filter(lambda t: isinstance(t, Purchase), sorted_transactions))
         sales = list(filter(lambda t: isinstance(t, Sale), sorted_transactions))

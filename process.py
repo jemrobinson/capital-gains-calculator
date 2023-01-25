@@ -20,6 +20,9 @@ if __name__ == "__main__":
     group.add_argument("-c", "--csv", type=str, help="CSV file to process")
     group.add_argument("-x", "--xml", type=str, help="XML file to process")
     parser.add_argument(
+        "-i", "--iso-currency", type=str, help="ISO currency code", default="GBP"
+    )
+    parser.add_argument(
         "-t",
         "--tax-year",
         metavar="N",
@@ -60,9 +63,15 @@ if __name__ == "__main__":
         data = XmlDataFile(args.xml)
 
     # Load accounts
-    accounts = [Account(name, data) for name in data.account_names]
+    accounts = [Account(name, args.iso_currency, data) for name in data.account_names]
 
     # Generate reports
-    for account in accounts:
-        if (not args.account_names) or (account.name in args.account_names):
-            account.report(start_date, end_date)
+    combined = sum(
+        [
+            account
+            for account in accounts
+            if (not args.account_names) or (account.name in args.account_names)
+        ]
+    )
+    combined.name = "Taxable Accounts"
+    combined.report(start_date, end_date)

@@ -1,9 +1,20 @@
 """Definition of the Reader class"""
 # Standard library imports
-from typing import Set
+from typing import Dict, List, Set
 
 # Third-party imports
 import pandas as pd
+from moneyed import Currency
+
+# Local imports
+from ..transactions import (
+    Dividend,
+    ExcessReportableIncome,
+    Purchase,
+    Sale,
+    ScripDividend,
+    Transaction,
+)
 
 
 class DataFile:
@@ -17,6 +28,100 @@ class DataFile:
         """List of account names"""
         return set(self.df_transactions["Cash Account"])
 
-    def account_transactions(self, name) -> pd.DataFrame:
-        """DataFrame of account transactions"""
-        return self.df_transactions.loc[(self.df_transactions["Cash Account"] == name)]
+    @property
+    def securities(self) -> Dict[str, pd.DataFrame]:
+        """Dictionary of account_name -> DataFrame where the DataFrame contains unique symbols and names of securities in that account"""
+        securities = {}
+        for account_name in self.account_names:
+            securities[account_name] = sorted(
+                set(
+                    self.df_transactions.loc[
+                        (self.df_transactions["Cash Account"] == account_name)
+                    ][["Symbol", "Security"]].itertuples(index=False)
+                ),
+                key=lambda t: t.Security.lower(),
+            )
+        return securities
+
+    def get_transaction_list(
+        self, account_name: str, security_name: str, currency: Currency
+    ) -> List[Transaction]:
+        """List of all transactions for a given account and security"""
+        transactions = []
+        for _, transaction in self.df_transactions.loc[
+            (self.df_transactions["Cash Account"] == account_name)
+            & (self.df_transactions["Security"] == security_name)
+        ].iterrows():
+            if transaction.Type.lower() == "buy":
+                if (
+                    transaction.Note
+                    and str(transaction.Note).lower() == "scrip dividend"
+                ):
+                    bought = ScripDividend(
+                        transaction.Date,
+                        currency,
+                        transaction.Shares,
+                        0,
+                        transaction.Fees,
+                        transaction.Taxes,
+                        transaction.Note,
+                    )
+                else:
+                    bought = Purchase(
+                        transaction.Date,
+                        currency,
+                        transaction.Shares,
+                        transaction.Amount,
+                        transaction.Fees,
+                        transaction.Taxes,
+                        transaction.Note,
+                    )
+                transactions.append(bought)
+            elif transaction.Type.lower() == "sell":
+                transactions.append(
+                    Sale(
+                        transaction.Date,
+                        currency,
+                        transaction.Shares,
+                        transaction.Amount,
+                        transaction.Fees,
+                        transaction.Taxes,
+                        transaction.Note,
+                    )
+                )
+            elif (
+                transaction.Note
+                and str(transaction.Note).lower() == "excess reportable income"
+            ):
+                # Note that ERIs are determined six months before they are booked as income
+                transactions.append(
+                    ExcessReportableIncome(
+                        transaction.Date - pd.DateOffset(months=6),
+                        currency,
+                        transaction.Amount,
+                    )
+                )
+            elif transaction.Type.lower() in ["dividend", "dividends"]:
+                if not (
+                    transaction.Note
+                    and str(transaction.Note).lower() == "scrip dividend"
+                ):
+                    transactions.append(
+                        Dividend(
+                            transaction.Date,
+                            currency,
+                            transaction.Shares,
+                            transaction.Amount,
+                            transaction.Fees,
+                            transaction.Taxes,
+                            transaction.Note,
+                        )
+                    )
+            elif transaction.Type.lower() in [
+                "fees refund",
+                "fees_refund",
+            ]:
+                pass
+            else:
+                raise ValueError(f"Unknown transaction!\n{transaction}")
+        return transactions

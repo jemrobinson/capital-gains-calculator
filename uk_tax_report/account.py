@@ -2,9 +2,10 @@
 # Standard library imports
 import logging
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 # Local imports
+from .converters import as_currency
 from .readers import DataFile
 from .security import Security
 from .transactions import Transaction
@@ -13,27 +14,48 @@ from .transactions import Transaction
 class Account:
     """Account containing several transactions"""
 
-    def __init__(self, name: str, reader: DataFile):
+    def __init__(self, name: str, currency: str, data: Optional[DataFile] = None):
         self.name = name
-        account_transactions = reader.account_transactions(name)
-        security_tuples = sorted(
-            set(
-                account_transactions[["ISIN", "Symbol", "Security"]].itertuples(
-                    index=False
+        self.currency = as_currency(currency)
+        if data:
+            self.securities = [
+                Security(
+                    symbol=security_tuple.Symbol,
+                    name=security_tuple.Security,
+                    currency=self.currency,
                 )
-            ),
-            key=lambda t: t.Security.lower(),
-        )
-        self.securities = [
-            Security(symbol=security_tuple.Symbol, name=security_tuple.Security)
-            for security_tuple in security_tuples
-        ]
-        for security in self.securities:
-            security.add_transactions(
-                account_transactions.loc[
-                    (account_transactions["Security"] == security.name)
-                ]
+                for security_tuple in data.securities[self.name]
+            ]
+            for security in self.securities:
+                security.add_transactions(
+                    data.get_transaction_list(self.name, security.name, self.currency)
+                )
+
+    def __add__(self, other: "Account") -> "Account":
+        if self.currency != other.currency:
+            raise ValueError(
+                f"Cannot add account '{self.name}' with currency {self.currency} to account '{other.name}' with currency {other.currency}"
             )
+        output = Account(f"{self.name}-{other.name}", self.currency)
+        output.securities = [
+            Security(old.symbol, old.name, self.currency)
+            for old in set(self.securities + other.securities)
+        ]
+        for security in output.securities:
+            for existing_security in self.securities + other.securities:
+                if existing_security.name == security.name:
+                    security.add_transactions(existing_security.transactions)
+        return output
+
+    def __radd__(self, other):
+        if not isinstance(other, Account):
+            return self
+        return other + self
+
+    @property
+    def transactions(self) -> List[Transaction]:
+        """List of transactions in this account"""
+        return sum([security.transactions for security in self.securities], [])
 
     def holdings(self, start_date: date, end_date: date) -> List[Security]:
         """List of securities held between these dates"""
@@ -42,11 +64,6 @@ class Account:
             for security in self.securities
             if security.is_held(start_date, end_date)
         ]
-
-    @property
-    def transactions(self) -> List[Transaction]:
-        """List of transactions in this account"""
-        return sum([security.transactions for security in self.securities], [])
 
     def report(self, start_date: date, end_date: date):
         """Report tax summary for this account"""

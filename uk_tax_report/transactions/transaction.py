@@ -2,26 +2,34 @@
 # Standard library imports
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Union
 
 # Third-party imports
 from moneyed import Currency, Money
 
 # Local imports
-from ..converters import abs_divide, as_datetime, as_money
+from ..converters import abs_divide, as_currency, as_datetime, as_money
 
 
 class Transaction:
     """Transaction where money is exchanged for a security"""
 
     def __init__(
-        self, date_time, currency, units=0, subtotal=0, fees=0, taxes=0, note=""
+        self,
+        date_time: Union[str, datetime],
+        currency: Union[str, Currency],
+        units: int = 0,
+        subtotal: Union[int, float, Money] = 0,
+        fees: Union[int, float, Money] = 0,
+        taxes: Union[int, float, Money] = 0,
+        note: str = "",
     ):
         self.datetime: datetime = as_datetime(date_time)
-        self.currency: Currency = currency
+        self.currency: Currency = as_currency(currency)
         self.units: Decimal = Decimal(units)
-        self.subtotal_: Money = as_money(subtotal, currency)
-        self.fees: Money = as_money(fees, currency)
-        self.taxes: Money = as_money(taxes, currency)
+        self.subtotal_: Money = as_money(subtotal, self.currency)
+        self.fees: Money = as_money(fees, self.currency)
+        self.taxes: Money = as_money(taxes, self.currency)
         self.note: str = str(note)
         self.type: str = None
 
