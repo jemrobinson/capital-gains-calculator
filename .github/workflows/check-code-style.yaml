@@ -14,9 +14,11 @@ jobs:
         run: pip install poetry
       - name: Install dependencies
         run: poetry install
+      - name: Check imports with isort
+        run: poetry run isort .
       - name: Check style with black
         run: poetry run black --check .
       - name: Check style with pylint
-        run: poetry run pylint capital_gains_calculator
+        run: poetry run pylint uk_tax_report
       - name: Check style with flake8
         run: poetry run flake8 .
