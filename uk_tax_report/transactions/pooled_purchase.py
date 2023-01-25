@@ -3,7 +3,8 @@
 from moneyed import Currency
 
 # Local imports
-from .disposal import BedAndBreakfast, Disposal
+from .bed_and_breakfast import BedAndBreakfast
+from .disposal import Disposal
 from .purchase import Purchase
 
 

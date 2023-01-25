@@ -7,7 +7,7 @@ from decimal import Decimal
 from moneyed import Currency, Money
 
 # Local imports
-from .utils import abs_divide, as_datetime, as_money
+from ..converters import abs_divide, as_datetime, as_money
 
 
 class Transaction:

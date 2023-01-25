@@ -4,10 +4,7 @@ import logging
 from typing import List, Tuple
 
 # Local imports
-from .disposal import Disposal
-from .pooled_purchase import PooledPurchase
-from .purchase import Purchase
-from .sale import Sale
+from .transactions import Disposal, PooledPurchase, Purchase, Sale
 
 
 def exchange(purchases: List[Purchase], sale: Sale) -> Tuple[Purchase, Sale, Disposal]:

@@ -1,10 +1,10 @@
-"""Definition of the Disposal and BedAndBreakfast classes"""
+"""Definition of the Disposal class"""
 # Third-party imports
 from moneyed import Money
 
 # Local imports
+from ..converters import abs_divide, as_money
 from .transaction import Transaction
-from .utils import abs_divide, as_money
 
 
 class Disposal(Transaction):
@@ -62,27 +62,3 @@ class Disposal(Transaction):
 
     def __str__(self) -> str:
         return f"Transaction: {self.type:8s} date = {self.date}, units = {self.units}, purchase_total = {self.purchase_total}, sale_total = {self.sale_total}, gain = {self.gain}"
-
-
-class BedAndBreakfast(Disposal):
-    """A disposal where the buying/selling are within 30 days"""
-
-    def __init__(self, disposal: Disposal):
-        super().__init__(
-            disposal.datetime,
-            disposal.currency,
-            disposal.units,
-            disposal.purchase_total,
-            disposal.purchase_fees,
-            disposal.purchase_taxes,
-            disposal.sale_total,
-            disposal.sale_fees,
-            disposal.sale_taxes,
-        )
-
-    @property
-    def subtotal(self) -> Money:
-        """Subtotal is not a valid property for this class"""
-        raise NotImplementedError(
-            "Subtotal is not a valid property for the BedAndBreakfast class"
-        )

@@ -4,22 +4,18 @@ import logging
 from datetime import date
 from typing import List
 
-# Third-party imports
-import pandas as pd
-
 # Local imports
+from .readers import DataFile
 from .security import Security
-from .transaction import Transaction
+from .transactions import Transaction
 
 
 class Account:
     """Account containing several transactions"""
 
-    def __init__(self, name: str, df_transactions: pd.DataFrame):
+    def __init__(self, name: str, reader: DataFile):
         self.name = name
-        account_transactions = df_transactions.loc[
-            (df_transactions["Cash Account"] == name)
-        ]
+        account_transactions = reader.account_transactions(name)
         security_tuples = sorted(
             set(
                 account_transactions[["ISIN", "Symbol", "Security"]].itertuples(
