@@ -11,7 +11,7 @@ class Sale(Transaction):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.type: str = "SOLD"
+        self.type: str = "Sold"
 
     @property
     def subtotal(self) -> Money:

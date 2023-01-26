@@ -21,6 +21,7 @@ class BedAndBreakfast(Disposal):
             disposal.sale_fees,
             disposal.sale_taxes,
         )
+        self.type: str = "Bed-and-breakfast"
 
     @property
     def subtotal(self) -> Money:

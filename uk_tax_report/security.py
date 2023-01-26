@@ -14,11 +14,9 @@ from .transactions import (
     BedAndBreakfast,
     Disposal,
     Dividend,
-    ExcessReportableIncome,
     PooledPurchase,
     Purchase,
     Sale,
-    ScripDividend,
     Transaction,
 )
 
@@ -98,41 +96,25 @@ class Security:
             if transaction.is_null:
                 logging.debug(f"Skipping transaction {str(transaction)}")
                 continue
-            if isinstance(transaction, ExcessReportableIncome):
+            # Transactions involving purchase (including ExcessReportableIncome and ScripDividend)
+            if isinstance(transaction, Purchase):
                 logging.info(
-                    f"{date_prefix} {f'ERI of {transaction.units} shares @ {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
+                    f"{date_prefix} {f'{transaction.type} {transaction.units} shares @ {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
                 )
-            elif isinstance(transaction, ScripDividend):
-                logging.info(
-                    f"{date_prefix} {f'Scrip dividend of {transaction.units} shares':52} {str(transaction.total):>18s}"
-                )
-            elif isinstance(transaction, Purchase):
-                logging.info(
-                    f"{date_prefix} {f'Bought {transaction.units} shares for {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"
-                )
-            elif isinstance(transaction, BedAndBreakfast):
-                logging.info(
-                    f"{date_prefix} {f'B&B: bought {transaction.units} shares @ {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
-                )
-                logging.info(
-                    f"{date_spacing} {f'B&B: sold {transaction.units} shares @ {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
-                )
-                if start_date <= transaction.datetime.date() <= end_date:
-                    logging.info(
-                        f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
-                    )
-                else:
-                    logging.info(
-                        f"{date_spacing} Resulting gain applies to another tax year"
-                    )
+            # Transactions involving a disposal
             elif isinstance(transaction, Disposal):
-                logging.info(
-                    f"{date_prefix} {f'Sold {transaction.units} shares @ {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
-                )
-                if start_date <= transaction.datetime.date() <= end_date:
+                if isinstance(transaction, BedAndBreakfast):
                     logging.info(
-                        f"{date_spacing} {f'Cost of {transaction.units} shares from pool @ {transaction.unit_price_bought} each':52} {str(transaction.purchase_total):>18}"
+                        f"{date_prefix} {f'Bought {transaction.units} shares (bed-and-breakfast) @ {transaction.unit_price_bought}':52} {str(transaction.purchase_total):>18}"
                     )
+                    logging.info(
+                        f"{date_spacing} {f'Sold {transaction.units} shares (bed-and-breakfast) @ {transaction.unit_price_sold}':52} {str(transaction.sale_total):>18}"
+                    )
+                else:
+                    logging.info(
+                        f"{date_prefix} {f'Sold {transaction.units} shares @ {transaction.unit_price_sold} each':52} {str(transaction.sale_total):>18}"
+                    )
+                if start_date <= transaction.datetime.date() <= end_date:
                     logging.info(
                         f"{date_spacing} {'Resulting gain':74} {str(transaction.gain):>18}"
                     )
@@ -140,6 +122,7 @@ class Security:
                     logging.info(
                         f"{date_spacing} Resulting gain applies to another tax year"
                     )
+            # Transactions involving a sale
             elif isinstance(transaction, Sale):
                 logging.info(
                     f"{date_prefix} {f'Sold {transaction.units} shares @ {transaction.subtotal} plus {transaction.charges} costs':52} {str(transaction.total):>18s}"

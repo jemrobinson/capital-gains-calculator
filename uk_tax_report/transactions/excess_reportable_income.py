@@ -22,4 +22,4 @@ class ExcessReportableIncome(Purchase):
             taxes=0,
             **kwargs
         )
-        self.type = "ERI"
+        self.type = "ERI of"

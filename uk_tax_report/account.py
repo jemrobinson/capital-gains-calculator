@@ -54,7 +54,10 @@ class Account:
 
     @property
     def taxable_securities(self) -> List[Security]:
-        return [s for s in self.securities if not "VCT" in s.name]
+        """List of securities excluding any VCTs"""
+        return sorted(
+            [s for s in self.securities if "VCT" not in s.name], key=lambda s: s.name
+        )
 
     @property
     def transactions(self) -> List[Transaction]:

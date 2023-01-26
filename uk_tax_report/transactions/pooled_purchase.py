@@ -14,7 +14,7 @@ class PooledPurchase(Purchase):
     def __init__(self, currency: Currency, **kwargs):
         kwargs["date_time"] = kwargs.get("date_time", "0001-01-01")
         super().__init__(currency=currency, **kwargs)
-        self.type: str = "POOL"
+        self.type: str = "Pool"
 
     @classmethod
     def from_purchase(cls, purchase: Purchase, currency: Currency) -> "PooledPurchase":

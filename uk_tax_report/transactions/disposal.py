@@ -29,7 +29,7 @@ class Disposal(Transaction):
         self.sale_total: Money = as_money(sale_total, currency)
         self.sale_fees: Money = as_money(sale_fees, currency)
         self.sale_taxes: Money = as_money(sale_taxes, currency)
-        self.type: str = "DISPOSAL"
+        self.type: str = "Disposal"
 
     @property
     def subtotal(self) -> Money:

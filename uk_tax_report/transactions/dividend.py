@@ -11,7 +11,7 @@ class Dividend(Transaction):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.type: str = "DIVIDEND"
+        self.type: str = "Dividend"
 
     @property
     def subtotal(self) -> Money:
