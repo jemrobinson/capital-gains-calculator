@@ -1,4 +1,7 @@
 """Definition of the Sale class"""
+# Third-party imports
+from moneyed import Money
+
 # Local imports
 from .transaction import Transaction
 
@@ -8,8 +11,8 @@ class Sale(Transaction):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.type = "SOLD"
+        self.type: str = "Sold"
 
     @property
-    def subtotal(self):
+    def subtotal(self) -> Money:
         return -self.subtotal_

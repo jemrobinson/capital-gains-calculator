@@ -12,8 +12,9 @@ py-moneyed = "^2.0"
 python-dateutil = "^2.8.2"
 
 [tool.poetry.dev-dependencies]
-black = "^21.12b0"
+black = "^22.0"
 flake8 = "^4.0.1"
+isort = "^5.10.1"
 pylint = "^2.12.2"
 
 [build-system]

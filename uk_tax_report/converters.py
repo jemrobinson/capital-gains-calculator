@@ -1,15 +1,28 @@
 """General utility functions for converting between types"""
 # Standard library imports
 import datetime
+from contextlib import suppress
 from decimal import InvalidOperation
+from math import isnan
+from typing import Any
 
 # Third party imports
 from dateutil.parser import parse
-from moneyed import Money
-from numpy import isnan
+from moneyed import Currency, CurrencyDoesNotExist, Money, get_currency
 
 
-def as_money(data, currency):
+def as_currency(data: Any) -> Currency:
+    """Convert arbitrary data into Currency"""
+    if isinstance(data, Currency):
+        return data
+    with suppress(CurrencyDoesNotExist):
+        return get_currency(code=data)
+    with suppress(CurrencyDoesNotExist):
+        return get_currency(iso=data)
+    raise CurrencyDoesNotExist(data)
+
+
+def as_money(data: Any, currency: Currency) -> Money:
     """Convert arbitrary data into Money"""
     if isinstance(data, Money):
         return data
@@ -18,14 +31,14 @@ def as_money(data, currency):
     return Money(data, currency)
 
 
-def as_datetime(data):
+def as_datetime(data: Any) -> datetime.datetime:
     """Convert arbitrary data into a datetime"""
     if isinstance(data, datetime.datetime):
         return data
     return parse(data)
 
 
-def abs_divide(money, number):
+def abs_divide(money: Money, number: float) -> Money:
     """
     The absolute value of dividing Money by a number.
     Returns 0 if there is an invalid division.
