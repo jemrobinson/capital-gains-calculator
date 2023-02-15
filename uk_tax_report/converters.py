@@ -8,7 +8,19 @@ from typing import Any
 
 # Third party imports
 from dateutil.parser import parse
-from moneyed import Currency, CurrencyDoesNotExist, Money, get_currency
+from moneyed import Currency, CurrencyDoesNotExist, Money, format_money, get_currency
+
+
+def abs_divide(money: Money, number: float) -> Money:
+    """
+    The absolute value of dividing Money by a number.
+    Returns 0 if there is an invalid division.
+    """
+    try:
+        result = abs(money / number)
+    except (ZeroDivisionError, InvalidOperation):
+        result = Money(0, money.currency)
+    return result
 
 
 def as_currency(data: Any) -> Currency:
@@ -22,15 +34,6 @@ def as_currency(data: Any) -> Currency:
     raise CurrencyDoesNotExist(data)
 
 
-def as_money(data: Any, currency: Currency) -> Money:
-    """Convert arbitrary data into Money"""
-    if isinstance(data, Money):
-        return data
-    if isnan(float(data)):
-        return Money(0, currency)
-    return Money(data, currency)
-
-
 def as_datetime(data: Any) -> datetime.datetime:
     """Convert arbitrary data into a datetime"""
     if isinstance(data, datetime.datetime):
@@ -38,13 +41,15 @@ def as_datetime(data: Any) -> datetime.datetime:
     return parse(data)
 
 
-def abs_divide(money: Money, number: float) -> Money:
-    """
-    The absolute value of dividing Money by a number.
-    Returns 0 if there is an invalid division.
-    """
-    try:
-        result = abs(money / number)
-    except (ZeroDivisionError, InvalidOperation):
-        result = Money(0, money.currency)
-    return result
+def as_fractional_money(money: Money) -> str:
+    """Convert Money to a formatted string"""
+    return format_money(money, format="\xa4#.####", currency_digits=False)
+
+
+def as_money(data: Any, currency: Currency) -> Money:
+    """Convert arbitrary data into Money"""
+    if isinstance(data, Money):
+        return data
+    if isnan(float(data)):
+        return Money(0, currency)
+    return Money(data, currency)

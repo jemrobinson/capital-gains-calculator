@@ -9,6 +9,7 @@ from typing import List, Tuple
 from moneyed import Currency
 
 # Local imports
+from .converters import as_fractional_money
 from .reconcile import exchange, reconcile
 from .transactions import (
     BedAndBreakfast,
@@ -132,7 +133,7 @@ class Security:
                     f"Unknown event of type {type(transaction).__name__}:\n {transaction}"
                 )
             logging.info(
-                f"{date_spacing} Pool: {pool.units} shares @ {pool.unit_price_inc} each, cost {str(pool.total)} "
+                f"{date_spacing} Pool: {pool.units} shares @ {as_fractional_money(pool.unit_price_inc)} each, cost {str(pool.total)} "
             )
 
     def report_dividends(self, start_date: date = None, end_date: date = None) -> None:
@@ -148,7 +149,7 @@ class Security:
             logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
             for dividend in dividends:
                 logging.info(
-                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares @ {dividend.unit_price} each':52} {str(dividend.total):>18}"
+                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares @ {as_fractional_money(dividend.unit_price)} each':52} {str(dividend.total):>18}"
                 )
 
     def resolve_transactions(self) -> None:

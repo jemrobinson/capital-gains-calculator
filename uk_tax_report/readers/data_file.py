@@ -52,7 +52,7 @@ class DataFile:
             (self.df_transactions["Cash Account"] == account_name)
             & (self.df_transactions["Security"] == security_name)
         ].iterrows():
-            if transaction.Type.lower() == "buy":
+            if transaction.Type.lower() in ["buy", "delivery_inbound"]:
                 if (
                     transaction.Note
                     and str(transaction.Note).lower() == "scrip dividend"
@@ -77,7 +77,7 @@ class DataFile:
                         transaction.Note,
                     )
                 transactions.append(bought)
-            elif transaction.Type.lower() == "sell":
+            elif transaction.Type.lower() in ["sell", "delivery_outbound"]:
                 transactions.append(
                     Sale(
                         transaction.Date,
