@@ -32,14 +32,17 @@ class Security:
         self.transactions: List[Transaction] = []
         self.events_: List[Tuple[Transaction, PooledPurchase]] = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Security({self.name} [{self.symbol}])"
 
-    def __str__(self):
+    def __str__(self) -> str:
         output = repr(self) + "\n"
         for transaction in self.transactions:
             output += f"   {transaction}\n"
         return output
+
+    def __lt__(self, other) -> bool:
+        return self.name < other.name
 
     def add_transactions(self, transactions: List[Transaction]) -> None:
         """Add new transactions then resolve them together with existing transactions"""

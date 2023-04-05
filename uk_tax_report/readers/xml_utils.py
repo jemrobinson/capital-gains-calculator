@@ -153,8 +153,11 @@ def ref2name(transaction: str, df_securities: pd.DataFrame) -> str:
     """Find the security name corresponding to a given reference"""
     try:
         reference = transaction.findall("security")[0].attrib["reference"]
-        regex_ = r".*/security\[(\d+)\]"
-        index = int(re.search(regex_, reference, re.IGNORECASE).group(1)) - 1
+        if reference.endswith("securities/security"):
+            index = 0
+        else:
+            regex_ = r".*/security\[(\d+)\]"
+            index = int(re.search(regex_, reference, re.IGNORECASE).group(1)) - 1
         return df_securities.iloc[index]["id"]
     except (IndexError, AttributeError):
         return None

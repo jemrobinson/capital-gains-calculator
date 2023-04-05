@@ -83,7 +83,7 @@ class Account:
         logging.info(
             f"Listing holdings during UK tax year {start_date.year}-{end_date.year}..."
         )
-        for security in self.holdings(start_date, end_date):
+        for security in sorted(self.holdings(start_date, end_date)):
             logging.info(f"  {f'[{security.symbol}]':15} {security.name}")
 
         # Capital gains
