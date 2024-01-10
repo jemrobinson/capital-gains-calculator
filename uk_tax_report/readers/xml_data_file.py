@@ -18,7 +18,7 @@ class XmlDataFile(DataFile):
 
         # Read all XML entries with a valid symbol and security
         self.df_transactions = read_xml(file_name)
-        self.df_transactions.dropna(subset=["Symbol", "Security"], inplace=True)
+        self.df_transactions.dropna(subset=["Security"], inplace=True)
 
         # Set datatypes
         self.df_transactions["Date"] = pd.to_datetime(self.df_transactions["Date"])
