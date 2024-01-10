@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "capital-gains-calculator"
+name = "uk-tax-report"
 version = "0.1.0"
-description = "UK capital gains calculator for Portfolio Performance"
+description = "UK tax report and capital gains calculator for Portfolio Performance"
 authors = ["James Robinson <james.em.robinson@gmail.com>"]
 license = "MIT"
 
