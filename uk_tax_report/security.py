@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 # Third party imports
 from moneyed import Currency
+import pandas as pd
 
 # Local imports
 from .converters import as_fractional_money
@@ -15,6 +16,7 @@ from .transactions import (
     BedAndBreakfast,
     Disposal,
     Dividend,
+    ExcessReportableIncome,
     PooledPurchase,
     Purchase,
     Sale,
@@ -140,19 +142,20 @@ class Security:
             )
 
     def report_dividends(self, start_date: date = None, end_date: date = None) -> None:
-        """Produce a dividends report"""
-        # Load all dividend transactions between the dates
-        dividends = [
+        """Produce a dividend and ERI report"""
+        # Load all dividend and ERI transactions between the dates
+        transactions = [
             t
             for t in self.transactions
-            if (start_date <= t.datetime.date() <= end_date) and isinstance(t, Dividend)
+            if (start_date <= t.datetime.date() <= end_date)
+            and (isinstance(t, Dividend) or isinstance(t, ExcessReportableIncome))
         ]
         # If there are dividends then log them
-        if dividends:
+        if transactions:
             logging.info(f"{self.name:88s} {f'({self.symbol})':>18s}")
-            for dividend in dividends:
+            for transaction in transactions:
                 logging.info(
-                    f"  {dividend.date}: {f'Dividend for {dividend.units} shares @ {as_fractional_money(dividend.unit_price)} each':52} {str(dividend.total):>18}"
+                    f"  {transaction.date}: {f'{transaction.type} for {transaction.units} shares @ {as_fractional_money(transaction.unit_price)} each':52} {str(transaction.total):>18}"
                 )
 
     def resolve_transactions(self) -> None:

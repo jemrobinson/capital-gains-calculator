@@ -93,9 +93,9 @@ class Account:
         for security in self.taxable_securities:
             security.report_capital_gains(start_date, end_date)
 
-        # Dividends
+        # Dividends and ERIs
         logging.info(
-            f"Looking for dividends during UK tax year {start_date.year}-{end_date.year}..."
+            f"Looking for dividends and ERIs during UK tax year {start_date.year}-{end_date.year}..."
         )
         for security in self.taxable_securities:
             security.report_dividends(start_date, end_date)

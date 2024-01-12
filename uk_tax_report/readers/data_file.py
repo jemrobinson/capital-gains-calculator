@@ -93,11 +93,12 @@ class DataFile:
                 transaction.Note
                 and str(transaction.Note).lower() == "excess reportable income"
             ):
-                # Note that ERIs are determined six months before they are booked as income
+                # The date here is the ERI distribution date
                 transactions.append(
                     ExcessReportableIncome(
-                        transaction.Date - pd.DateOffset(months=6),
+                        transaction.Date,
                         currency,
+                        transaction.Shares,
                         transaction.Amount,
                     )
                 )
