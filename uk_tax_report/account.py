@@ -72,7 +72,9 @@ class Account:
             if security.is_held(start_date, end_date)
         ]
 
-    def report(self, start_date: date, end_date: date):
+    def report(
+        self, start_date: date, end_date: date, include_non_taxable: bool = False
+    ):
         """Report tax summary for this account"""
         # Restrict to specified accounts
         logging.info(
@@ -85,19 +87,24 @@ class Account:
         )
         for security in sorted(self.holdings(start_date, end_date)):
             logging.info(f"  {f'[{security.symbol}]':15} {security.name}")
+        relevant_securities = (
+            sorted(self.securities, key=lambda s: s.name)
+            if include_non_taxable
+            else self.taxable_securities
+        )
 
         # Capital gains
         logging.info(
             f"Looking for capital gains during UK tax year {start_date.year}-{end_date.year}..."
         )
-        for security in self.taxable_securities:
+        for security in relevant_securities:
             security.report_capital_gains(start_date, end_date)
 
         # Dividends and ERIs
         logging.info(
             f"Looking for dividends and ERIs during UK tax year {start_date.year}-{end_date.year}..."
         )
-        for security in self.taxable_securities:
+        for security in relevant_securities:
             security.report_dividends(start_date, end_date)
 
     def __str__(self) -> str:

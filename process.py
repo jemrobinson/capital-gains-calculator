@@ -20,6 +20,12 @@ if __name__ == "__main__":
     group.add_argument("-c", "--csv", type=str, help="CSV file to process")
     group.add_argument("-x", "--xml", type=str, help="XML file to process")
     parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="Include all transactions (not just taxable ones)",
+    )
+    parser.add_argument(
         "-i", "--iso-currency", type=str, help="ISO currency code", default="GBP"
     )
     parser.add_argument(
@@ -74,4 +80,4 @@ if __name__ == "__main__":
         ]
     )
     combined.name = "Taxable Accounts"
-    combined.report(start_date, end_date)
+    combined.report(start_date, end_date, include_non_taxable=args.all)
