@@ -7,7 +7,6 @@ from typing import List, Tuple
 
 # Third party imports
 from moneyed import Currency
-import pandas as pd
 
 # Local imports
 from .converters import as_fractional_money
@@ -217,7 +216,14 @@ class Security:
                 f"Starting a transaction with {pool.units} shares in the pool"
             )
             pool = copy.deepcopy(pool)
-            if isinstance(transaction, Purchase):
+            if isinstance(transaction, ExcessReportableIncome):
+                logging.debug(
+                    f"=> Found a {type(transaction).__name__} on {transaction.date}:"
+                )
+                logging.debug(f"  {transaction}")
+                pool.add_eri(transaction)
+                self.events.append((transaction, pool))
+            elif isinstance(transaction, Purchase):
                 logging.debug(
                     f"=> Found a {type(transaction).__name__} on {transaction.date}:"
                 )
