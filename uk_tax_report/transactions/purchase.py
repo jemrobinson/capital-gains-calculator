@@ -3,10 +3,10 @@
 from moneyed import Money
 
 # Local imports
-from .transaction import Transaction
+from .credit_debit import DebitTransaction
 
 
-class Purchase(Transaction):
+class Purchase(DebitTransaction):
     """Transaction where a security is bought"""
 
     def __init__(self, *args, **kwargs):

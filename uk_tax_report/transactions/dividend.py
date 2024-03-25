@@ -3,10 +3,10 @@
 from moneyed import Money
 
 # Local imports
-from .transaction import Transaction
+from .credit_debit import CreditTransaction
 
 
-class Dividend(Transaction):
+class Dividend(CreditTransaction):
     """Transaction where a dividend is paid by a security"""
 
     def __init__(self, *args, **kwargs):
