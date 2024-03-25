@@ -102,10 +102,10 @@ def get_transactions(root: ET.Element, account_id, df_securities):
             total = (
                 Decimal(get_first(transaction, "amount")) / 100
             )  # this includes fees and taxes
-            if type_ == "SELL":
-                total += fees + taxes
-            else:
+            if type_ == "BUY":
                 total -= fees + taxes
+            else:
+                total += fees + taxes
             note = get_first(transaction, "note") or ""
             if security_id:
                 transactions.append(
