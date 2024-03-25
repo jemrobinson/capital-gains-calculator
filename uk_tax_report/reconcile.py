@@ -37,7 +37,7 @@ def reconcile(purchase: Purchase, sale: Sale) -> Tuple[Purchase, Sale, Disposal]
         raise ValueError(
             f"Currencies {sale.currency} and {purchase.currency} do not match!"
         )
-    total_units = abs(purchase.units - sale.units)
+    residual_units = abs(purchase.units - sale.units)
     if purchase.units > sale.units:
         # In this case we are selling part of the purchase => the entire sale is consumed
         logging.debug(f"Selling part of the purchase: {sale.units} of {purchase.units}")
@@ -49,7 +49,7 @@ def reconcile(purchase: Purchase, sale: Sale) -> Tuple[Purchase, Sale, Disposal]
             purchase.unit_price_inc * sale.units,
             purchase.unit_fees * sale.units,
             purchase.unit_taxes * sale.units,
-            abs(sale.total),
+            sale.total,
             sale.fees,
             sale.taxes,
         )
@@ -65,7 +65,7 @@ def reconcile(purchase: Purchase, sale: Sale) -> Tuple[Purchase, Sale, Disposal]
         purchase_ = Purchase(
             purchase.datetime,
             purchase.currency,
-            total_units,
+            residual_units,
             residual_cost,
             purchase_residual_fees,
             purchase_residual_taxes,
@@ -99,7 +99,7 @@ def reconcile(purchase: Purchase, sale: Sale) -> Tuple[Purchase, Sale, Disposal]
         sale_ = Sale(
             sale.datetime,
             sale.currency,
-            total_units,
+            residual_units,
             residual_cost,
             sale_residual_fees,
             sale_residual_taxes,
