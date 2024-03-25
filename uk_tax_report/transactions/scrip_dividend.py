@@ -12,7 +12,3 @@ class ScripDividend(Purchase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.type: str = "Scrip dividend of"
-
-    @property
-    def subtotal(self) -> Money:
-        return self.subtotal_

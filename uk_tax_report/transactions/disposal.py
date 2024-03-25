@@ -39,6 +39,13 @@ class Disposal(Transaction):
         )
 
     @property
+    def total(self) -> Money:
+        """Total is not a valid property for this class"""
+        raise NotImplementedError(
+            "Total is not a valid property for the Disposal class"
+        )
+
+    @property
     def unit_price_sold(self) -> Money:
         """The unit price at which the units were sold"""
         return abs_divide(self.sale_total, self.units)

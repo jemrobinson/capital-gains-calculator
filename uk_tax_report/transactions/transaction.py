@@ -65,13 +65,12 @@ class Transaction:
 
     @property
     def subtotal(self) -> Money:
-        """Subtotal must be implemented by child classes"""
-        raise NotImplementedError
+        return self.subtotal_
 
     @property
     def total(self) -> Money:
-        """Total paid in this transaction"""
-        return self.charges + self.subtotal
+        """Total must be implemented by child classes"""
+        raise NotImplementedError()
 
     @property
     def is_null(self) -> bool:

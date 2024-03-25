@@ -22,10 +22,3 @@ class BedAndBreakfast(Disposal):
             disposal.sale_taxes,
         )
         self.type: str = "Bed-and-breakfast"
-
-    @property
-    def subtotal(self) -> Money:
-        """Subtotal is not a valid property for this class"""
-        raise NotImplementedError(
-            "Subtotal is not a valid property for the BedAndBreakfast class"
-        )
