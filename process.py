@@ -77,7 +77,7 @@ if __name__ == "__main__":
             account
             for account in accounts
             if (not args.account_names) or (account.name in args.account_names)
-        ]
+        ],
+        start=Account("Taxable Accounts", args.iso_currency)
     )
-    combined.name = "Taxable Accounts"
     combined.report(start_date, end_date, include_non_taxable=args.all)

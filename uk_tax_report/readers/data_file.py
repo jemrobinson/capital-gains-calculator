@@ -77,7 +77,7 @@ class DataFile:
                         transaction.Note,
                     )
                 transactions.append(bought)
-            elif transaction.Type.lower() in ["sell", "delivery_outbound"]:
+            elif transaction.Type.lower() in ["sell", "delivery_outbound", "transfer_out"]:
                 transactions.append(
                     Sale(
                         transaction.Date,

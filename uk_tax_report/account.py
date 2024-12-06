@@ -30,6 +30,8 @@ class Account:
                 security.add_transactions(
                     data.get_transaction_list(self.name, security.name, self.currency)
                 )
+        else:
+            self.securities = []
 
     def __add__(self, other: "Account") -> "Account":
         if self.currency != other.currency:
